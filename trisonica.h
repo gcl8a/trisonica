@@ -56,6 +56,17 @@ public:
         return String(dataStr);
     }
     
+    String MakeShortDataString(void)
+    {
+        char dataStr[100];
+        
+        sprintf(dataStr, "%2.2f,%2.2f,%2.2f",
+                speed,
+                direction,
+                temperature);
+        
+        return String(dataStr);
+    }
 };
 
 class Trisonica

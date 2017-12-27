@@ -19,7 +19,7 @@ String GetTriSonicaSubstring(const String& str, int datum)
         
         //now find the next white space
         nextSpace = str.indexOf(' ', charIndex);
-        if(nextSpace == -1) return String("");
+        if(nextSpace == -1) nextSpace = str.length();
     }
     
     return str.substring(charIndex, nextSpace);

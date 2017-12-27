@@ -28,8 +28,6 @@ public:
     
     uint8_t Parse(const String& str)
     {
-        Serial.println(str);
-        
         speed = GetTriSonicaSubstring(str, 0).toFloat();
         direction = GetTriSonicaSubstring(str, 1).toFloat();
         U = GetTriSonicaSubstring(str, 2).toFloat();
@@ -45,7 +43,7 @@ public:
         char dataStr[100];
         
         sprintf(dataStr, "%lu,%2.2f,%2.2f,%2.2f,%2.2f,%2.2f,%2.2f",
-                timestamp,
+                timestamp%1000,
                 speed,
                 direction,
                 U,
@@ -101,8 +99,47 @@ public:
                 triString = "";
             }
         }
+
+        return retVal;
+    }
+    
+    uint8_t CheckSerial(TrisonicaDatum* datum)
+    {
+        uint8_t retVal = 0;
+        while(serial->available())
+        {
+            char c = serial->read();
+            if(c != '\n' && c != '\r') triString += c;  //ignore carriage return and newline
+            if(c == '\n') //we have a complete string
+            {
+                TrisonicaDatum newReading(millis());
+                retVal = newReading.Parse(triString); //parse it; retVal holds its type
+                if(retVal)
+                {
+                    *datum = newReading;
+                }
+                
+                triString = "";
+                return retVal; //return here so we don't start on the next string
+            }
+        }
         
         return retVal;
+    }
+    
+    int CheckSerialNoParse(void)
+    {
+        while(serial->available())
+        {
+            char c = serial->read();
+            if(c != '\n' && c != '\r') triString += c;  //ignore carriage return and newline
+            if(c == '\n') //we have a complete string
+            {
+                return true;
+            }
+        }
+        
+        return false;
     }
 };
 

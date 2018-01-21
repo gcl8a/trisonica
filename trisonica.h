@@ -16,24 +16,26 @@ String GetTriSonicaSubstring(const String& str, int datum);
 class TrisonicaDatum
 {
 protected:
-    float speed, direction;
-    float U,V,W;
-    float temperature = 0;
+    uint32_t timestamp = 0;
     
-    uint32_t timestamp = 0; //result of millis() -- not "true" timestamp
+    //all stored as tenths for efficiency
+    int8_t U, V, W, speed = 0;
+    int16_t temperature;
+    
+    //degrees
+    int16_t direction;
     
 public:
-    TrisonicaDatum(uint32_t ts = 0) : timestamp(ts)
-    {}
+    TrisonicaDatum(uint32_t ts = 0) : timestamp(ts) {}
     
-    uint8_t Parse(const String& str)
+    uint8_t ParseInputString(const String& str)
     {
-        speed = GetTriSonicaSubstring(str, 0).toFloat();
-        direction = GetTriSonicaSubstring(str, 1).toFloat();
-        U = GetTriSonicaSubstring(str, 2).toFloat();
-        V = GetTriSonicaSubstring(str, 3).toFloat();
-        W = GetTriSonicaSubstring(str, 4).toFloat();
-        temperature = GetTriSonicaSubstring(str, 5).toFloat();
+        speed = GetTriSonicaSubstring(str, 0).toFloat() * 10;
+        direction = GetTriSonicaSubstring(str, 1).toInt();
+        U = GetTriSonicaSubstring(str, 2).toFloat() * 10;
+        V = GetTriSonicaSubstring(str, 3).toFloat() * 10;
+        W = GetTriSonicaSubstring(str, 4).toFloat() * 10;
+        temperature = GetTriSonicaSubstring(str, 5).toFloat() * 10;
         
         return 1;
     }
@@ -42,14 +44,14 @@ public:
     {
         char dataStr[100];
         
-        sprintf(dataStr, "%lu,%2.2f,%2.2f,%2.2f,%2.2f,%2.2f,%2.2f",
-                timestamp%1000,
-                speed,
+        sprintf(dataStr, "%lu,%2.1f,%i,%2.1f,%2.1f,%2.1f,%2.1f",
+                timestamp,
+                speed / 10.0,
                 direction,
-                U,
-                V,
-                W,
-                temperature);
+                U / 10.0,
+                V / 10.0,
+                W / 10.0,
+                temperature / 10.0);
         
         return String(dataStr);
     }
@@ -58,10 +60,10 @@ public:
     {
         char dataStr[100];
         
-        sprintf(dataStr, "%2.2f,%2.2f,%2.2f",
-                speed,
+        sprintf(dataStr, "%2.1f,%i,%2.1f",
+                speed / 10.0,
                 direction,
-                temperature);
+                temperature / 10.0);
         
         return String(dataStr);
     }
@@ -79,7 +81,8 @@ public:
     Trisonica(HardwareSerial* ser) : serial(ser) {}
     
     TrisonicaDatum GetReading(void) {return workingDatum;}
-    
+    String MakeDataString(void) {return workingDatum.MakeDataString();}
+
     int CheckSerial(void)
     {
         int retVal = 0;
@@ -90,7 +93,7 @@ public:
             if(c == '\n') //we have a complete string
             {
                 TrisonicaDatum newReading(millis());
-                retVal = newReading.Parse(triString); //parse it; retVal holds its type
+                retVal = newReading.ParseInputString(triString); //parse it; retVal holds its type
                 if(retVal)
                 {
                     workingDatum = newReading;
@@ -101,45 +104,6 @@ public:
         }
 
         return retVal;
-    }
-    
-    uint8_t CheckSerial(TrisonicaDatum* datum)
-    {
-        uint8_t retVal = 0;
-        while(serial->available())
-        {
-            char c = serial->read();
-            if(c != '\n' && c != '\r') triString += c;  //ignore carriage return and newline
-            if(c == '\n') //we have a complete string
-            {
-                TrisonicaDatum newReading(millis());
-                retVal = newReading.Parse(triString); //parse it; retVal holds its type
-                if(retVal)
-                {
-                    *datum = newReading;
-                }
-                
-                triString = "";
-                return retVal; //return here so we don't start on the next string
-            }
-        }
-        
-        return retVal;
-    }
-    
-    int CheckSerialNoParse(void)
-    {
-        while(serial->available())
-        {
-            char c = serial->read();
-            if(c != '\n' && c != '\r') triString += c;  //ignore carriage return and newline
-            if(c == '\n') //we have a complete string
-            {
-                return true;
-            }
-        }
-        
-        return false;
     }
 };
 
